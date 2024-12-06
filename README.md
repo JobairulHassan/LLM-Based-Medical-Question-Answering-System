@@ -29,7 +29,8 @@ This system is designed to allow users to ask medical-related questions and rece
 
 ## Dataset
 
-Dataset link : [Click Here]([https://www.google.com](https://huggingface.co/datasets/lavita/medical-qa-datasets))
+Dataset link: [Click Here](https://huggingface.co/datasets/lavita/medical-qa-datasets)
+
 
 ## Training Process
 
