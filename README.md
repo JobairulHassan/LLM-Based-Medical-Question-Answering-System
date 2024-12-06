@@ -10,6 +10,7 @@ This project implements a Medical Question Answering (QA) system that leverages 
 5. [Training Process](#training-process)
 6. [Running the Application](#running-the-application)
 7. [Dependencies](#dependencies)
+8. [Sample Output](#sample-output)
 
 ## Overview
 
@@ -55,3 +56,5 @@ faiss - For efficient nearest neighbor search.
 torch - For deep learning tasks with PyTorch.
 sentence-transformers - For generating embeddings for RAG-based retrieval.
 ```
+## Sample Output
+![Screenshot 2024-12-06 152918](https://github.com/user-attachments/assets/04ca30e2-fa6e-4f7c-bf6f-573ea1211f8a)
