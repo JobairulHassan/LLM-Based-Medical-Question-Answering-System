@@ -24,8 +24,8 @@ This system is designed to allow users to ask medical-related questions and rece
 
 ## Setup and Installation
 
--**Install Dependencies:** `pip install -r requirements.txt`
--**Download Files:** clone/Download files and run cell by cell.
+- **Install Dependencies:** `pip install -r requirements.txt`
+- **Download Files:** clone/Download files and run cell by cell.
 
 ## Dataset
 
