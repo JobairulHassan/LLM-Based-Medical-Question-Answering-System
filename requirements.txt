@@ -1,6 +1,20 @@
-streamlit==1.10.0
-transformers==4.26.1
-datasets==2.8.0
-faiss-cpu==1.7.3
-torch==1.12.1
-sentence-transformers==2.2.0
+sentence-transformers==3.2.1
+transformers==4.46.3
+langchain==0.3.20 
+langchain-community==0.3.19
+langchain-core==0.3.41
+llama-index==0.12.22
+llama-index-llms-huggingface==0.4.2
+llama-index-embeddings-langchain==0.3.0
+llama-index-embeddings-huggingface==0.5.2
+pydantic==2.10.6
+pinecone==5.4.2
+langchain-pinecone==0.2.3
+flask
+pypdf
+python-dotenv
+pyvis
+einops
+accelerate
+bitsandbytes
+-e .

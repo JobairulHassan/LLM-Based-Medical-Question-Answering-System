@@ -1,73 +1,69 @@
-import faiss
+from flask import Flask, render_template, jsonify, request
+from src.helper import embed_model, index
+from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv
+from llama_index.core import Settings
+from src.prompt import *
+import os
 import torch
-import pandas as pd
-import streamlit as st
-from sentence_transformers import SentenceTransformer
-from transformers import MT5ForConditionalGeneration, MT5Tokenizer
+from llama_index.llms.huggingface import HuggingFaceLLM
 
-embed_model = SentenceTransformer('all-MiniLM-L6-v2')
-main_data = pd.read_csv('Dataset.csv')
-main_data = main_data[:25000] 
-main_data = main_data.dropna()
+app = Flask(__name__)
 
-def load_model():
-    model = MT5ForConditionalGeneration.from_pretrained('Medical_QA_mT5_Model_v2.pt')
-    tokenizer = MT5Tokenizer.from_pretrained('Medical_QA_mT5_Tokenizer_v2.json')
-    return model, tokenizer
+load_dotenv()
 
-def retrieve_documents(query, k=5):
-    index = faiss.read_index("medical_qa_index.faiss")
-    query_embedding = embed_model.encode([query])
-    distances, indices = index.search(query_embedding, k)
-    
-    # Get contexts based on indices retrieved
-    retrieved_contexts = [main_data['input'][i] for i in indices[0]]
-    return retrieved_contexts
+# PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
+# PINECONE_API_ENV = os.environ.get('PINECONE_API_ENV')
 
-# Function to generate a response from the mT5 model
-def generate_answer(model, tokenizer, user_input):
-    retrieved_contexts = retrieve_documents(user_input)
-    
-    # Combine retrieved contexts into one string for input to the model
-    context_input = " ".join(retrieved_contexts)
-    
-    input_text = f"Context: {context_input}\nQuestion: {user_input}"
-    inputs = tokenizer(input_text, return_tensors="pt", truncation=True)
-    
-    with torch.no_grad():
-        outputs = model.generate(**inputs)
-    
-    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return answer
 
-# Streamlit app code
-def main():
-    st.title("Medical-QA APP")
+embeddings = embed_model
 
-    # Load the model and tokenizer
-    model, tokenizer = load_model()
+# Customize embed model setting
+Settings.embed_model = embed_model
+Settings.chunk_size = 512
+Settings.chunk_overlap = 30
 
-    if "history" not in st.session_state:
-        st.session_state.history = []
 
-    # Input area for the user to ask a question
-    user_input = st.text_area("Ask a question", key="input_area")
+query_wrapper_prompt = PromptTemplate("<|USER|>{query_str}<|ASSISTANT|>")
 
-    if st.button("Submit"):
-        if user_input:
-            # Get model response
-            model_output = generate_answer(model, tokenizer, user_input)
+LLM_MODEL_NAME = "meta-llama/Llama-3.2-1B"
 
-            # Save user input and model response to history
-            st.session_state.history.append({"user": user_input, "model": model_output})
+# To import models from HuggingFace directly
+llm = HuggingFaceLLM(
+    context_window=4096,
+    max_new_tokens=512,
+    generate_kwargs={"temperature": 0.7,"do_sample":False},
+    system_prompt=system_prompt,
+    query_wrapper_prompt=query_wrapper_prompt,
+    tokenizer_name=LLM_MODEL_NAME,
+    model_name=LLM_MODEL_NAME,
+    device_map="auto",
+    # uncomment this if using CUDA to reduce memory usage
+    model_kwargs={"torch_dtype": torch.float16 , "load_in_8bit":True}
+)
 
-    # Display chat history
-    for chat in st.session_state.history:
-        # User question aligned to the right
-        st.markdown(f"<p style='text-align: right; color: black; font-size: 16px;'><b>User:</b> {chat['user']}</p>", unsafe_allow_html=True)
+Settings.llm = llm
 
-        # Model response aligned to the left
-        st.markdown(f"<p style='text-align: left; color: black; font-size: 16px;'><b>Response:</b> {chat['model']}</p>", unsafe_allow_html=True)
+query_engine = index.as_query_engine(llm=llm, similarity_top_k=3)
 
-if __name__ == "__main__":
-    main()
+
+
+@app.route("/")
+def index():
+    return render_template('chat.html')
+
+
+
+@app.route("/get", methods=["GET", "POST"])
+def chat():
+    msg = request.form["msg"]
+    input = msg
+    print(input)
+    result=query_engine.query(input)
+    print("Response : ", result.response)
+    return str(result.response)
+
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port= 8080, debug= True)
